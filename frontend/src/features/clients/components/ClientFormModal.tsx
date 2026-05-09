@@ -1,10 +1,10 @@
 import { X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
-import type { ClientStatus } from "../../../types/client";
+import type { Client, ClientStatus } from "../../../types/client";
 import "./ClientFormModal.css";
 
-type ClientFormData = {
+export type ClientFormData = {
   first_name: string;
   last_name: string;
   phone: string;
@@ -17,6 +17,7 @@ type ClientFormData = {
 type ClientFormModalProps = {
   isOpen: boolean;
   isSaving: boolean;
+  client?: Client | null;
   onClose: () => void;
   onSubmit: (data: ClientFormData) => Promise<void>;
 };
@@ -31,18 +32,49 @@ const initialFormData: ClientFormData = {
   status: "ACTIVE",
 };
 
-export function ClientFormModal({ isOpen, isSaving, onClose, onSubmit }: ClientFormModalProps) {
+function mapClientToFormData(client: Client): ClientFormData {
+  return {
+    first_name: client.first_name,
+    last_name: client.last_name,
+    phone: client.phone,
+    email: client.email ?? "",
+    address: client.address,
+    notes: client.notes,
+    status: client.status,
+  };
+}
+
+export function ClientFormModal({
+  isOpen,
+  isSaving,
+  client,
+  onClose,
+  onSubmit,
+}: ClientFormModalProps) {
   const [formData, setFormData] = useState<ClientFormData>(initialFormData);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const isEditing = Boolean(client);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setErrorMessage("");
+
+    if (client) {
+      setFormData(mapClientToFormData(client));
+    } else {
+      setFormData(initialFormData);
+    }
+  }, [client, isOpen]);
 
   if (!isOpen) {
     return null;
   }
 
-  const handleChange = (
-    field: keyof ClientFormData,
-    value: string
-  ) => {
+  const handleChange = (field: keyof ClientFormData, value: string) => {
     setFormData((currentData) => ({
       ...currentData,
       [field]: value,
@@ -65,9 +97,8 @@ export function ClientFormModal({ isOpen, isSaving, onClose, onSubmit }: ClientF
 
     try {
       await onSubmit(formData);
-      setFormData(initialFormData);
     } catch {
-      setErrorMessage("No se ha podido crear el cliente. Revisa los datos introducidos.");
+      setErrorMessage("No se ha podido guardar el cliente. Revisa los datos introducidos.");
     }
   };
 
@@ -76,8 +107,12 @@ export function ClientFormModal({ isOpen, isSaving, onClose, onSubmit }: ClientF
       <section className="client-modal">
         <header className="client-modal__header">
           <div>
-            <h2>Nuevo cliente</h2>
-            <p>Registra los datos principales del cliente</p>
+            <h2>{isEditing ? "Editar cliente" : "Nuevo cliente"}</h2>
+            <p>
+              {isEditing
+                ? "Actualiza los datos principales del cliente"
+                : "Registra los datos principales del cliente"}
+            </p>
           </div>
 
           <button type="button" onClick={onClose} aria-label="Cerrar formulario">
@@ -168,7 +203,7 @@ export function ClientFormModal({ isOpen, isSaving, onClose, onSubmit }: ClientF
             </button>
 
             <button className="client-form__primary" type="submit" disabled={isSaving}>
-              {isSaving ? "Guardando..." : "Guardar cliente"}
+              {isSaving ? "Guardando..." : isEditing ? "Guardar cambios" : "Guardar cliente"}
             </button>
           </footer>
         </form>
