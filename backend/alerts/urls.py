@@ -1,3 +1,8 @@
-from django.urls import path
+from rest_framework.routers import DefaultRouter
 
-urlpatterns = []
+from .views import AlertViewSet
+
+router = DefaultRouter()
+router.register("", AlertViewSet, basename="alerts")
+
+urlpatterns = router.urls
