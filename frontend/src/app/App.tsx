@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "../components/layout/AppLayout";
 import { PlaceholderPage } from "../components/ui/PlaceholderPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
+import { ClientsPage } from "../features/clients/pages/ClientsPage";
 
 export default function App() {
   return (
@@ -10,7 +11,7 @@ export default function App() {
       <Route path="/" element={<AppLayout />}>
         <Route index element={<Navigate to="/inicio" replace />} />
         <Route path="inicio" element={<DashboardPage />} />
-        <Route path="clientes" element={<PlaceholderPage title="Gestión de clientes" />} />
+        <Route path="clientes" element={<ClientsPage />} />        
         <Route path="presupuestos" element={<PlaceholderPage title="Gestión de presupuestos" />} />
         <Route path="trabajos" element={<PlaceholderPage title="Gestión de trabajos" />} />
         <Route path="calendario" element={<PlaceholderPage title="Calendario / Planificación" />} />
