@@ -25,3 +25,24 @@ export type MaterialPayload = {
   unit_price: string;
   notes: string;
 };
+
+export type MaterialConsumption = {
+  id: number;
+  job: number;
+  job_title: string;
+  material: number;
+  material_name: string;
+  quantity: string;
+  consumption_date: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MaterialConsumptionPayload = {
+  job: number;
+  material: number;
+  quantity: string;
+  consumption_date: string;
+  notes: string;
+};
