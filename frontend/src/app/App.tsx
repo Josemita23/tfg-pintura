@@ -6,6 +6,7 @@ import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { ClientsPage } from "../features/clients/pages/ClientsPage";
 import { ClientDetailPage } from "../features/clients/pages/ClientDetailPage";
 import { BudgetsPage } from "../features/budgets/pages/BudgetsPage";
+import { JobsPage } from "../features/jobs/pages/JobsPage"; 
 
 export default function App() {
  return (
@@ -16,7 +17,7 @@ export default function App() {
         <Route path="clientes" element={<ClientsPage />} />
         <Route path="clientes/:clientId" element={<ClientDetailPage />} />
         <Route path="presupuestos" element={<BudgetsPage />} />
-        <Route path="trabajos" element={<PlaceholderPage title="Gestión de trabajos" />} />
+        <Route path="trabajos" element={<JobsPage />} />
         <Route path="calendario" element={<PlaceholderPage title="Calendario / Planificación" />} />
         <Route path="materiales" element={<PlaceholderPage title="Gestión de materiales" />} />
         <Route path="alertas" element={<PlaceholderPage title="Alertas" />} />
