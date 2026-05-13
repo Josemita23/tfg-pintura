@@ -5,6 +5,7 @@ from .models import CalendarEvent
 
 class CalendarEventSerializer(serializers.ModelSerializer):
     job_title = serializers.CharField(source="job.title", read_only=True)
+    job_client_name = serializers.SerializerMethodField()
 
     class Meta:
         model = CalendarEvent
@@ -12,6 +13,7 @@ class CalendarEventSerializer(serializers.ModelSerializer):
             "id",
             "job",
             "job_title",
+            "job_client_name",
             "title",
             "event_type",
             "start_at",
@@ -22,7 +24,19 @@ class CalendarEventSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "job_title", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "job_title",
+            "job_client_name",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_job_client_name(self, obj):
+        if obj.job and obj.job.client:
+            return str(obj.job.client)
+
+        return None
 
     def validate(self, attrs):
         start_at = attrs.get("start_at", getattr(self.instance, "start_at", None))
