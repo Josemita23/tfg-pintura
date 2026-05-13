@@ -7,6 +7,7 @@ export type CalendarEvent = {
   job: number | null;
   job_title: string | null;
   job_client_name: string | null;
+  job_display_name: string;
   title: string;
   event_type: CalendarEventType;
   start_at: string;

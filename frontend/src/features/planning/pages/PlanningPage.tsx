@@ -99,7 +99,7 @@ function getDateRangeKeys(startValue: string, endValue: string) {
 }
 
 function getEventLabelForDay(event: CalendarEvent) {
-    return event.title;
+    return event.job_display_name || event.title;
 }
 
 function formatMonth(date: Date) {
@@ -501,12 +501,20 @@ export function PlanningPage() {
 
                                             <div className="planning-day__events">
                                                 {dayEvents.slice(0, 3).map((event) => (
-                                                    <span
+                                                    <button
                                                         key={`${dayKey}-${event.id}`}
+                                                        type="button"
                                                         className={`planning-event-dot planning-event-dot--${event.event_type.toLowerCase()}`}
+                                                        onClick={(clickEvent) => {
+                                                            clickEvent.stopPropagation();
+                                                            openEditModal(event);
+                                                        }}
+                                                        onDoubleClick={(doubleClickEvent) => {
+                                                            doubleClickEvent.stopPropagation();
+                                                        }}
                                                     >
                                                         {getEventLabelForDay(event)}
-                                                    </span>
+                                                    </button>
                                                 ))}
 
                                                 {dayEvents.length > 3 && (
