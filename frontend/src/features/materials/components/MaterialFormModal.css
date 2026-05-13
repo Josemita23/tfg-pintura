@@ -1,0 +1,144 @@
+.material-form-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.material-form-modal {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 48px);
+  padding: 22px;
+  overflow-y: auto;
+}
+
+.material-form__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.material-form__header h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.material-form__header p {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.material-form__header button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 12px;
+  background: #f5f7fb;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.material-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.material-form label {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.material-form input,
+.material-form textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--color-text);
+  font-size: 14px;
+  outline: 0;
+}
+
+.material-form input {
+  height: 42px;
+  padding: 0 12px;
+}
+
+.material-form textarea {
+  padding: 11px 12px;
+  resize: vertical;
+}
+
+.material-form input:focus,
+.material-form textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.material-form__full {
+  grid-column: 1 / -1;
+}
+
+.material-form__error {
+  margin: 14px 0 0;
+  color: var(--color-danger);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.material-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.material-form__actions button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.material-form__secondary {
+  background: #f5f7fb;
+  color: var(--color-muted);
+}
+
+.material-form__primary {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.material-form__primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .material-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .material-form__actions {
+    flex-direction: column;
+  }
+}
