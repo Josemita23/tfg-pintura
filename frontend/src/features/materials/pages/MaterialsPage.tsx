@@ -76,6 +76,10 @@ export function MaterialsPage() {
         loadInitialData();
     }, []);
 
+    function notifyAlertsChanged() {
+        window.dispatchEvent(new Event("alerts:changed"));
+    }
+
     async function loadInitialData() {
         try {
             setIsLoading(true);
@@ -175,6 +179,7 @@ export function MaterialsPage() {
             }
 
             await loadInitialData();
+            notifyAlertsChanged();
             closeConsumptionModal();
         } finally {
             setIsSavingConsumption(false);
@@ -193,8 +198,9 @@ export function MaterialsPage() {
         try {
             await api.delete(`/materials/consumptions/${consumption.id}/`);
             await loadInitialData();
+            notifyAlertsChanged();
         } catch {
-            alert("No se ha podido eliminar el consumo.");
+            window.alert("No se ha podido eliminar el consumo.");
         }
     }
 
@@ -219,6 +225,7 @@ export function MaterialsPage() {
                 setMaterials((currentMaterials) => [response.data, ...currentMaterials]);
             }
 
+            notifyAlertsChanged();
             closeFormModal();
         } finally {
             setIsSavingMaterial(false);
@@ -575,7 +582,7 @@ export function MaterialsPage() {
                 onClose={closeFormModal}
                 onSubmit={handleSubmitMaterial}
             />
-            
+
             <MaterialConsumptionFormModal
                 isOpen={isConsumptionModalOpen}
                 isSaving={isSavingConsumption}

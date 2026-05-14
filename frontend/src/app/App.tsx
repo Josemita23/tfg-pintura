@@ -9,6 +9,7 @@ import { BudgetsPage } from "../features/budgets/pages/BudgetsPage";
 import { JobsPage } from "../features/jobs/pages/JobsPage";
 import { PlanningPage } from "../features/planning/pages/PlanningPage";
 import { MaterialsPage } from "../features/materials/pages/MaterialsPage";
+import { AlertsPage } from "../features/alerts/pages/AlertsPage";
 
 export default function App() {
  return (
@@ -22,7 +23,7 @@ export default function App() {
         <Route path="trabajos" element={<JobsPage />} />
         <Route path="/calendario" element={<PlanningPage />} />
         <Route path="/materiales" element={<MaterialsPage />} />
-        <Route path="alertas" element={<PlaceholderPage title="Alertas" />} />
+        <Route path="/alertas" element={<AlertsPage />} />
         <Route path="facturacion" element={<PlaceholderPage title="Facturación" />} />
         <Route path="configuracion" element={<PlaceholderPage title="Configuración" />} />
       </Route>

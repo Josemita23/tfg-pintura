@@ -11,6 +11,9 @@ import {
   WalletCards,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { api } from "../../services/api";
+import type { Alert } from "../../types/alert";
 
 const menuItems = [
   { label: "Inicio", path: "/inicio", icon: Home },
@@ -25,6 +28,28 @@ const menuItems = [
 ];
 
 export function Sidebar() {
+  const [unreadAlertsCount, setUnreadAlertsCount] = useState(0);
+
+  async function loadUnreadAlertsCount() {
+    try {
+      const response = await api.get<Alert[]>("/alerts/");
+      const unreadCount = response.data.filter((alert) => !alert.is_read).length;
+
+      setUnreadAlertsCount(unreadCount);
+    } catch {
+      setUnreadAlertsCount(0);
+    }
+  }
+
+  useEffect(() => {
+    loadUnreadAlertsCount();
+
+    window.addEventListener("alerts:changed", loadUnreadAlertsCount);
+
+    return () => {
+      window.removeEventListener("alerts:changed", loadUnreadAlertsCount);
+    };
+  }, []);
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
@@ -52,6 +77,10 @@ export function Sidebar() {
             >
               <Icon size={18} />
               <span>{item.label}</span>
+
+              {item.path === "/alertas" && unreadAlertsCount > 0 && (
+                <span className="sidebar__badge">{unreadAlertsCount}</span>
+              )}
             </NavLink>
           );
         })}
