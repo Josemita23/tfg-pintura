@@ -10,8 +10,9 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { NavLink } from "react-router-dom";
+
 import { api } from "../../services/api";
 import type { Alert } from "../../types/alert";
 
@@ -50,6 +51,7 @@ export function Sidebar() {
       window.removeEventListener("alerts:changed", loadUnreadAlertsCount);
     };
   }, []);
+
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
