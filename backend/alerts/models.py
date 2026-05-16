@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 from jobs.models import Job
 from materials.models import Material
@@ -81,6 +82,16 @@ class Alert(models.Model):
         ordering = ["is_read", "-created_at"]
         verbose_name = "Alerta"
         verbose_name_plural = "Alertas"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "job", "alert_type"],
+                condition=Q(
+                    alert_type="JOB_REMINDER",
+                    job__isnull=False,
+                ),
+                name="unique_job_reminder_per_job_owner",
+            )
+        ]
 
     def __str__(self):
         return self.title

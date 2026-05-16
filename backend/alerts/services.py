@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -191,7 +192,6 @@ def sync_job_reminder_alert_for_job(
         for field, value in alert_data.items():
             setattr(existing_alert, field, value)
 
-        existing_alert.is_read = False
         existing_alert.material = None
         existing_alert.calendar_event = None
 
@@ -201,7 +201,6 @@ def sync_job_reminder_alert_for_job(
                 "priority",
                 "title",
                 "description",
-                "is_read",
                 "material",
                 "calendar_event",
                 "updated_at",
@@ -210,13 +209,23 @@ def sync_job_reminder_alert_for_job(
 
         return existing_alert
 
-    return Alert.objects.create(
-        owner=owner,
-        job=job,
-        material=None,
-        calendar_event=None,
-        **alert_data,
-    )
+    try:
+        with transaction.atomic():
+            return Alert.objects.create(
+                owner=owner,
+                job=job,
+                material=None,
+                calendar_event=None,
+                **alert_data,
+            )
+    except IntegrityError:
+        existing_alert = Alert.objects.filter(
+            owner=owner,
+            job=job,
+            alert_type=Alert.AlertType.JOB_REMINDER,
+        ).order_by("-created_at").first()
+
+        return existing_alert
 
 def mark_stale_job_reminders_as_read(owner, reference_date, upcoming_job_days):
     if not owner or not getattr(owner, "is_authenticated", False):
