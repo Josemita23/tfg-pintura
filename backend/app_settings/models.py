@@ -28,6 +28,12 @@ class AppSettings(models.Model):
         verbose_name="Stock bajo por defecto",
     )
 
+    work_weekends = models.BooleanField(
+        default=True,
+        verbose_name="Trabajar fines de semana",
+        help_text="Permite incluir sábados y domingos en la planificación de eventos.",
+    )
+
     upcoming_job_days = models.PositiveIntegerField(
         default=3,
         validators=[MinValueValidator(1), MaxValueValidator(365)],

@@ -20,6 +20,10 @@ import type {
     CalendarEventStatus,
     CalendarEventType,
 } from "../../../types/planning";
+
+type AppSettingsResponse = {
+    work_weekends: boolean;
+};
 import "../styles/PlanningPage.css";
 
 const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -58,7 +62,7 @@ type EventFormData = {
 const emptyFormData: EventFormData = {
     job: "",
     title: "",
-    event_type: "JOB",
+    event_type: "VISIT",
     start_date: "",
     end_date: "",
     start_time: "",
@@ -76,7 +80,7 @@ function getDateKey(date: Date) {
     return `${year}-${month}-${day}`;
 }
 
-function getDateRangeKeys(startValue: string, endValue: string) {
+function getDateRangeKeys(startValue: string, endValue: string, includeWeekends = true) {
     const startDate = new Date(startValue);
     const endDate = new Date(endValue);
 
@@ -95,7 +99,12 @@ function getDateRangeKeys(startValue: string, endValue: string) {
     const keys: string[] = [];
 
     while (currentDate <= lastDate) {
-        keys.push(getDateKey(currentDate));
+        const dayOfWeek = currentDate.getDay();
+
+        if (includeWeekends || (dayOfWeek !== 0 && dayOfWeek !== 6)) {
+            keys.push(getDateKey(currentDate));
+        }
+
         currentDate.setDate(currentDate.getDate() + 1);
     }
 
@@ -211,6 +220,7 @@ export function PlanningPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [workWeekends, setWorkWeekends] = useState(true);
     const isEditingJobEvent = Boolean(selectedEvent?.job && selectedEvent.event_type === "JOB");
 
     useEffect(() => {
@@ -222,13 +232,15 @@ export function PlanningPage() {
             setIsLoading(true);
             setErrorMessage("");
 
-            const [eventsResponse, jobsResponse] = await Promise.all([
+            const [eventsResponse, jobsResponse, settingsResponse] = await Promise.all([
                 api.get<CalendarEvent[]>("/planning/"),
                 api.get<Job[]>("/jobs/"),
+                api.get<AppSettingsResponse>("/app-settings/").catch(() => ({ data: { work_weekends: true } })),
             ]);
 
             setEvents(eventsResponse.data);
             setJobs(jobsResponse.data);
+            setWorkWeekends(settingsResponse.data.work_weekends ?? true);
         } catch {
             setErrorMessage("No se ha podido cargar la planificación.");
         } finally {
@@ -243,7 +255,8 @@ export function PlanningPage() {
 
     const eventsByDay = useMemo(() => {
         return events.reduce<Record<string, CalendarEvent[]>>((accumulator, event) => {
-            const dayKeys = getDateRangeKeys(event.start_at, event.end_at);
+            const shouldSkipWeekends = event.event_type === "JOB" && !workWeekends;
+            const dayKeys = getDateRangeKeys(event.start_at, event.end_at, !shouldSkipWeekends);
 
             dayKeys.forEach((key) => {
                 if (!accumulator[key]) {
@@ -255,7 +268,7 @@ export function PlanningPage() {
 
             return accumulator;
         }, {});
-    }, [events]);
+    }, [events, workWeekends]);
 
     const selectedDateKey = getDateKey(selectedDate);
 
@@ -334,6 +347,11 @@ export function PlanningPage() {
     }
 
     function openEditModal(event: CalendarEvent) {
+        if (event.event_type === "JOB") {
+            openDetailModal(event);
+            return;
+        }
+
         const startDateTime = toEventFormDateTime(event.start_at);
         const endDateTime = toEventFormDateTime(event.end_at);
 
@@ -533,6 +551,7 @@ export function PlanningPage() {
                                         day.getMonth() === currentMonth.getMonth();
                                     const isSelected = dayKey === selectedDateKey;
                                     const isToday = dayKey === getDateKey(new Date());
+                                    const isWeekend = day.getDay() === 0 || day.getDay() === 6;
 
                                     return (
                                         <button
@@ -543,6 +562,7 @@ export function PlanningPage() {
                                                 !isCurrentMonth ? "planning-day--muted" : "",
                                                 isSelected ? "planning-day--selected" : "",
                                                 isToday ? "planning-day--today" : "",
+                                                isWeekend && isCurrentMonth ? "planning-day--weekend" : "",
                                             ]
                                                 .filter(Boolean)
                                                 .join(" ")}
@@ -696,7 +716,6 @@ export function PlanningPage() {
                                             })
                                         }
                                     >
-                                        <option value="JOB">Trabajo</option>
                                         <option value="VISIT">Visita</option>
                                         <option value="REMINDER">Recordatorio</option>
                                     </select>
@@ -722,24 +741,16 @@ export function PlanningPage() {
 
                             <div className="planning-form__row">
                                 <label>
-                                    Fecha inicio
+                                    Fecha
                                     <input
                                         type="date"
                                         value={formData.start_date}
                                         onChange={(event) =>
-                                            setFormData({ ...formData, start_date: event.target.value })
-                                        }
-                                        required
-                                    />
-                                </label>
-
-                                <label>
-                                    Fecha fin
-                                    <input
-                                        type="date"
-                                        value={formData.end_date}
-                                        onChange={(event) =>
-                                            setFormData({ ...formData, end_date: event.target.value })
+                                            setFormData({ 
+                                                ...formData, 
+                                                start_date: event.target.value,
+                                                end_date: event.target.value,
+                                            })
                                         }
                                         required
                                     />

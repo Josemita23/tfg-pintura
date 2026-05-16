@@ -165,6 +165,14 @@
   color: #ffffff;
 }
 
+.planning-day--weekend {
+  background: #f0f0f5;
+}
+
+.planning-day--weekend:hover {
+  background: #e8e8f0;
+}
+
 .planning-day__number {
   width: 28px;
   height: 28px;

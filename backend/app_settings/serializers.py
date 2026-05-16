@@ -11,6 +11,7 @@ class AppSettingsSerializer(serializers.ModelSerializer):
             "default_start_time",
             "default_end_time",
             "low_stock_threshold",
+            "work_weekends",
             "upcoming_job_days",
             "updated_at",
         ]

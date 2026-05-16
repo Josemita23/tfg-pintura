@@ -1,4 +1,4 @@
-import { Bell, Building2, Check, Clock, Save, UserRound } from "lucide-react";
+import { Bell, Building2, Check, Save, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { useAuth } from "../../auth/AuthContext";
@@ -17,6 +17,7 @@ type SettingsFormData = {
   defaultEndTime: string;
   lowStockThreshold: string;
   upcomingJobDays: string;
+  workWeekends: boolean;
 };
 
 type ProfileResponse = {
@@ -34,6 +35,7 @@ type AppSettingsResponse = {
   default_start_time: string;
   default_end_time: string;
   low_stock_threshold: number;
+  work_weekends: boolean;
   upcoming_job_days: number;
   updated_at: string;
 };
@@ -52,6 +54,7 @@ const defaultSettings: SettingsFormData = {
   defaultEndTime: "18:00",
   lowStockThreshold: "5",
   upcomingJobDays: "3",
+  workWeekends: true,
 };
 
 function getStorageKey(userId: number | undefined) {
@@ -127,6 +130,8 @@ export function SettingsPage() {
             storedSettings.defaultEndTime,
           lowStockThreshold: String(serverSettings.low_stock_threshold),
           upcomingJobDays: String(serverSettings.upcoming_job_days),
+          workWeekends:
+            serverSettings.work_weekends ?? storedSettings.workWeekends,
         };
 
         setFormData(nextFormData);
@@ -165,7 +170,7 @@ export function SettingsPage() {
       .join("");
   }, [formData.professionalName]);
 
-  function updateField(field: keyof SettingsFormData, value: string) {
+  function updateField(field: keyof SettingsFormData, value: string | boolean) {
     setFormData((currentFormData) => ({
       ...currentFormData,
       [field]: value,
@@ -192,13 +197,6 @@ export function SettingsPage() {
       return;
     }
 
-    if (formData.defaultStartTime && formData.defaultEndTime) {
-      if (formData.defaultEndTime <= formData.defaultStartTime) {
-        setErrorMessage("La hora de fin debe ser posterior a la hora de inicio.");
-        return;
-      }
-    }
-
     if (upcomingJobDays < 1 || upcomingJobDays > 365) {
       setErrorMessage("Los dias de aviso deben estar entre 1 y 365.");
       return;
@@ -215,6 +213,7 @@ export function SettingsPage() {
       email,
       upcomingJobDays: String(upcomingJobDays),
       lowStockThreshold: String(lowStockThreshold),
+      workWeekends: formData.workWeekends,
     };
 
     try {
@@ -224,10 +223,8 @@ export function SettingsPage() {
       });
 
       await api.patch<AppSettingsResponse>("/app-settings/", {
-        default_start_time: formData.defaultStartTime,
-        default_end_time: formData.defaultEndTime,
-        low_stock_threshold: lowStockThreshold,
         upcoming_job_days: upcomingJobDays,
+        work_weekends: formData.workWeekends,
       });
 
       window.localStorage.setItem(storageKey, JSON.stringify(nextFormData));
@@ -251,10 +248,8 @@ export function SettingsPage() {
 
     try {
       await api.patch<AppSettingsResponse>("/app-settings/", {
-        default_start_time: nextFormData.defaultStartTime,
-        default_end_time: nextFormData.defaultEndTime,
-        low_stock_threshold: Number.parseInt(nextFormData.lowStockThreshold, 10),
         upcoming_job_days: Number.parseInt(nextFormData.upcomingJobDays, 10),
+        work_weekends: nextFormData.workWeekends,
       });
 
       setFormData(nextFormData);
@@ -392,25 +387,25 @@ export function SettingsPage() {
             </div>
 
             <div className="settings-preferences">
-              <label>
+              <div className="settings-preferences__item">
                 <span className="settings-preferences__title">
-                  <Clock size={18} />
-                  Horario habitual
+                  <Check size={18} />
+                  Trabajar fines de semana
                 </span>
 
-                <div className="settings-preferences__controls">
-                  <input
-                    type="time"
-                    value={formData.defaultStartTime}
-                    onChange={(event) => updateField("defaultStartTime", event.target.value)}
-                  />
-                  <input
-                    type="time"
-                    value={formData.defaultEndTime}
-                    onChange={(event) => updateField("defaultEndTime", event.target.value)}
-                  />
+                <div className="settings-preferences__controls settings-preferences__controls--switch">
+                  <label className="switch">
+                    <input
+                      className="switch__input"
+                      type="checkbox"
+                      checked={formData.workWeekends}
+                      onChange={(event) => updateField("workWeekends", event.target.checked)}
+                    />
+                    <span className="switch__slider" />
+                  </label>
+                  <small>Marca si se trabaja sábados y domingos</small>
                 </div>
-              </label>
+              </div>
 
               <label>
                 <span className="settings-preferences__title">
@@ -426,23 +421,6 @@ export function SettingsPage() {
                     onChange={(event) => updateField("upcomingJobDays", event.target.value)}
                   />
                   <small>dias antes</small>
-                </div>
-              </label>
-
-              <label>
-                <span className="settings-preferences__title">
-                  <Check size={18} />
-                  Stock bajo por defecto
-                </span>
-
-                <div className="settings-preferences__controls">
-                  <input
-                    min="0"
-                    type="number"
-                    value={formData.lowStockThreshold}
-                    onChange={(event) => updateField("lowStockThreshold", event.target.value)}
-                  />
-                  <small>unidades</small>
                 </div>
               </label>
             </div>
