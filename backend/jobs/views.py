@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, timedelta, time
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
@@ -56,39 +56,30 @@ def sync_job_calendar_event(job):
         return
 
     end_date = job.end_date or job.start_date
+    start_time = job.start_time or time(9, 0)
+    end_time = job.end_time or time(18, 0)
 
-    start_at = build_job_datetime(
-        job.start_date,
-        job.start_time,
-        time(9, 0),
-    )
-
-    end_at = build_job_datetime(
-        end_date,
-        job.end_time,
-        time(18, 0),
-    )
-
-    if end_at <= start_at:
+    if end_time <= start_time:
         raise serializers.ValidationError(
-            {
-                "end_time": "La fecha y hora de fin debe ser posterior a la fecha y hora de inicio."
-            }
+            {"end_time": "La hora de fin debe ser posterior a la hora de inicio."}
         )
 
-    CalendarEvent.objects.update_or_create(
-        job=job,
-        event_type=CalendarEvent.EventType.JOB,
-        defaults={
-            "job": job,
-            "title": build_calendar_event_title(job),
-            "start_at": start_at,
-            "end_at": end_at,
-            "location": job.address,
-            "description": job.description or job.notes,
-            "status": get_calendar_status_from_job(job),
-        },
-    )
+    job_events.delete()
+
+    current_date = job.start_date
+
+    while current_date <= end_date:
+        CalendarEvent.objects.create(
+            job=job,
+            title=build_calendar_event_title(job),
+            event_type=CalendarEvent.EventType.JOB,
+            start_at=build_job_datetime(current_date, start_time, time(9, 0)),
+            end_at=build_job_datetime(current_date, end_time, time(18, 0)),
+            location=job.address,
+            description=job.description or job.notes,
+            status=get_calendar_status_from_job(job),
+        )
+        current_date += timedelta(days=1)
 
 
 class JobViewSet(viewsets.ModelViewSet):

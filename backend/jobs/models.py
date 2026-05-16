@@ -61,12 +61,5 @@ class Job(models.Model):
         if self.start_date and self.end_date and self.end_date < self.start_date:
             raise ValidationError("La fecha de fin no puede ser anterior a la fecha de inicio.")
 
-        if (
-            self.start_date
-            and self.end_date
-            and self.start_date == self.end_date
-            and self.start_time
-            and self.end_time
-            and self.end_time <= self.start_time
-        ):
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
             raise ValidationError("La hora de fin debe ser posterior a la hora de inicio.")

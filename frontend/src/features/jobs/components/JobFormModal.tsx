@@ -127,9 +127,6 @@ export function JobFormModal({
     }
 
     if (
-      formData.start_date &&
-      formData.end_date &&
-      formData.start_date === formData.end_date &&
       formData.start_time &&
       formData.end_time &&
       formData.end_time <= formData.start_time

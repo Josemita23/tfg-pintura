@@ -43,14 +43,7 @@ class JobSerializer(serializers.ModelSerializer):
                 "La fecha de fin no puede ser anterior a la fecha de inicio."
             )
 
-        if (
-            start_date
-            and end_date
-            and start_date == end_date
-            and start_time
-            and end_time
-            and end_time <= start_time
-        ):
+        if start_time and end_time and end_time <= start_time:
             raise serializers.ValidationError(
                 "La hora de fin debe ser posterior a la hora de inicio."
             )

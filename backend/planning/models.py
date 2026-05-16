@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from jobs.models import Job
+from .overlap import find_overlapping_calendar_events
 
 
 class CalendarEvent(models.Model):
@@ -60,15 +61,14 @@ class CalendarEvent(models.Model):
         if self.end_at <= self.start_at:
             raise ValidationError("La fecha y hora de fin debe ser posterior a la de inicio.")
 
-        overlapping_events = CalendarEvent.objects.filter(
-            start_at__lt=self.end_at,
-            end_at__gt=self.start_at,
-        ).exclude(status=self.Status.CANCELLED)
+        overlapping_events = find_overlapping_calendar_events(
+            CalendarEvent,
+            self.start_at,
+            self.end_at,
+            self,
+        )
 
-        if self.pk:
-            overlapping_events = overlapping_events.exclude(pk=self.pk)
-
-        if overlapping_events.exists():
+        if overlapping_events:
             raise ValidationError("Ya existe un evento planificado en ese intervalo de tiempo.")
 
     def save(self, *args, **kwargs):

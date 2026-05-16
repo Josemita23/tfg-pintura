@@ -46,8 +46,10 @@ type EventFormData = {
     job: string;
     title: string;
     event_type: CalendarEventType;
-    start_at: string;
-    end_at: string;
+    start_date: string;
+    end_date: string;
+    start_time: string;
+    end_time: string;
     location: string;
     description: string;
     status: CalendarEventStatus;
@@ -57,8 +59,10 @@ const emptyFormData: EventFormData = {
     job: "",
     title: "",
     event_type: "JOB",
-    start_at: "",
-    end_at: "",
+    start_date: "",
+    end_date: "",
+    start_time: "",
+    end_time: "",
     location: "",
     description: "",
     status: "PLANNED",
@@ -135,12 +139,25 @@ function toDateTimeLocalValue(value: string) {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-function buildDateTimeForDay(date: Date, hour: number) {
+function toEventFormDateTime(value: string) {
+    const [date = "", time = ""] = toDateTimeLocalValue(value).split("T");
+
+    return {
+        date,
+        time,
+    };
+}
+
+function buildDateForDay(date: Date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
 
-    return `${year}-${month}-${day}T${String(hour).padStart(2, "0")}:00`;
+    return `${year}-${month}-${day}`;
+}
+
+function buildDateTimeLocalValue(date: string, time: string) {
+    return `${date}T${time}`;
 }
 
 function getCalendarDays(currentMonth: Date) {
@@ -194,6 +211,7 @@ export function PlanningPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const isEditingJobEvent = Boolean(selectedEvent?.job && selectedEvent.event_type === "JOB");
 
     useEffect(() => {
         loadInitialData();
@@ -257,6 +275,34 @@ export function PlanningPage() {
         });
     }, [events, currentMonth]);
 
+    const monthJobCount = useMemo(() => {
+        const jobIds = new Set<number>();
+        let standaloneJobEvents = 0;
+
+        monthEvents.forEach((event) => {
+            if (event.event_type !== "JOB") {
+                return;
+            }
+
+            if (event.job) {
+                jobIds.add(event.job);
+                return;
+            }
+
+            standaloneJobEvents += 1;
+        });
+
+        return jobIds.size + standaloneJobEvents;
+    }, [monthEvents]);
+
+    const monthEventCount = useMemo(() => {
+        const nonJobEventCount = monthEvents.filter(
+            (event) => event.event_type !== "JOB"
+        ).length;
+
+        return monthJobCount + nonJobEventCount;
+    }, [monthEvents, monthJobCount]);
+
     function goToPreviousMonth() {
         setCurrentMonth(
             new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
@@ -279,20 +325,27 @@ export function PlanningPage() {
         setSelectedEvent(null);
         setFormData({
             ...emptyFormData,
-            start_at: buildDateTimeForDay(date, 9),
-            end_at: buildDateTimeForDay(date, 10),
+            start_date: buildDateForDay(date),
+            end_date: buildDateForDay(date),
+            start_time: "09:00",
+            end_time: "10:00",
         });
         setIsFormOpen(true);
     }
 
     function openEditModal(event: CalendarEvent) {
+        const startDateTime = toEventFormDateTime(event.start_at);
+        const endDateTime = toEventFormDateTime(event.end_at);
+
         setSelectedEvent(event);
         setFormData({
             job: event.job ? String(event.job) : "",
             title: event.title,
             event_type: event.event_type,
-            start_at: toDateTimeLocalValue(event.start_at),
-            end_at: toDateTimeLocalValue(event.end_at),
+            start_date: startDateTime.date,
+            end_date: endDateTime.date,
+            start_time: startDateTime.time,
+            end_time: endDateTime.time,
             location: event.location,
             description: event.description,
             status: event.status,
@@ -320,12 +373,15 @@ export function PlanningPage() {
     async function handleSubmitEvent(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
+        const startAt = buildDateTimeLocalValue(formData.start_date, formData.start_time);
+        const endAt = buildDateTimeLocalValue(formData.end_date, formData.end_time);
+
         const payload: CalendarEventPayload = {
             job: selectedEvent?.job ?? (formData.job ? Number(formData.job) : null),
             title: formData.title,
             event_type: formData.event_type,
-            start_at: formData.start_at,
-            end_at: formData.end_at,
+            start_at: startAt,
+            end_at: endAt,
             location: formData.location,
             description: formData.description,
             status: formData.status,
@@ -401,15 +457,13 @@ export function PlanningPage() {
             <div className="planning-summary">
                 <article className="planning-summary__card card">
                     <p>Eventos del mes</p>
-                    <strong>{monthEvents.length}</strong>
+                    <strong>{monthEventCount}</strong>
                     <CalendarDays size={22} />
                 </article>
 
                 <article className="planning-summary__card card">
                     <p>Trabajos</p>
-                    <strong>
-                        {monthEvents.filter((event) => event.event_type === "JOB").length}
-                    </strong>
+                    <strong>{monthJobCount}</strong>
                     <Briefcase size={22} />
                 </article>
 
@@ -634,6 +688,7 @@ export function PlanningPage() {
                                     Tipo
                                     <select
                                         value={formData.event_type}
+                                        disabled={isEditingJobEvent}
                                         onChange={(event) =>
                                             setFormData({
                                                 ...formData,
@@ -667,24 +722,50 @@ export function PlanningPage() {
 
                             <div className="planning-form__row">
                                 <label>
-                                    Inicio
+                                    Fecha inicio
                                     <input
-                                        type="datetime-local"
-                                        value={formData.start_at}
+                                        type="date"
+                                        value={formData.start_date}
                                         onChange={(event) =>
-                                            setFormData({ ...formData, start_at: event.target.value })
+                                            setFormData({ ...formData, start_date: event.target.value })
                                         }
                                         required
                                     />
                                 </label>
 
                                 <label>
-                                    Fin
+                                    Fecha fin
                                     <input
-                                        type="datetime-local"
-                                        value={formData.end_at}
+                                        type="date"
+                                        value={formData.end_date}
                                         onChange={(event) =>
-                                            setFormData({ ...formData, end_at: event.target.value })
+                                            setFormData({ ...formData, end_date: event.target.value })
+                                        }
+                                        required
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="planning-form__row">
+                                <label>
+                                    Hora inicio
+                                    <input
+                                        type="time"
+                                        value={formData.start_time}
+                                        onChange={(event) =>
+                                            setFormData({ ...formData, start_time: event.target.value })
+                                        }
+                                        required
+                                    />
+                                </label>
+
+                                <label>
+                                    Hora fin
+                                    <input
+                                        type="time"
+                                        value={formData.end_time}
+                                        onChange={(event) =>
+                                            setFormData({ ...formData, end_time: event.target.value })
                                         }
                                         required
                                     />
@@ -764,14 +845,18 @@ export function PlanningPage() {
 
                         <div className="planning-event-detail">
                             <p>
-                                <strong>Inicio:</strong>{" "}
-                                {formatDate(new Date(detailEvent.start_at))} a las{" "}
-                                {formatEventTime(detailEvent.start_at)}
+                                <strong>Fecha inicio:</strong>{" "}
+                                {formatDate(new Date(detailEvent.start_at))}
                             </p>
 
                             <p>
-                                <strong>Fin:</strong>{" "}
-                                {formatDate(new Date(detailEvent.end_at))} a las{" "}
+                                <strong>Fecha fin:</strong>{" "}
+                                {formatDate(new Date(detailEvent.end_at))}
+                            </p>
+
+                            <p>
+                                <strong>Horario:</strong>{" "}
+                                {formatEventTime(detailEvent.start_at)} -{" "}
                                 {formatEventTime(detailEvent.end_at)}
                             </p>
 

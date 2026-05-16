@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import CalendarEvent
+from .overlap import find_overlapping_calendar_events
 
 
 class CalendarEventSerializer(serializers.ModelSerializer):
@@ -60,15 +61,14 @@ class CalendarEventSerializer(serializers.ModelSerializer):
             )
 
         if start_at and end_at:
-            overlapping_events = CalendarEvent.objects.filter(
-                start_at__lt=end_at,
-                end_at__gt=start_at,
-            ).exclude(status=CalendarEvent.Status.CANCELLED)
+            overlapping_events = find_overlapping_calendar_events(
+                CalendarEvent,
+                start_at,
+                end_at,
+                self.instance,
+            )
 
-            if self.instance:
-                overlapping_events = overlapping_events.exclude(pk=self.instance.pk)
-
-            if overlapping_events.exists():
+            if overlapping_events:
                 raise serializers.ValidationError(
                     "Ya existe un evento planificado en ese intervalo de tiempo."
                 )
