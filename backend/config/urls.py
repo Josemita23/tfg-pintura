@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
 
+from .auth_views import login_view, profile_view, register_view
+
 
 def health_check(request):
     return JsonResponse({"status": "ok"})
@@ -27,6 +29,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     path("api/health/", health_check),
+    path("api/auth/login/", login_view),
+    path("api/auth/register/", register_view),
+    path("api/auth/profile/", profile_view),
 
     path("api/clients/", include("clients.urls")),
     path("api/budgets/", include("budgets.urls")),

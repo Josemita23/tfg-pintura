@@ -62,3 +62,19 @@ class MaterialConsumptionSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("La cantidad consumida debe ser mayor que cero.")
         return value
+
+    def validate_job(self, value):
+        request = self.context.get("request")
+
+        if request and value.owner_id != request.user.id:
+            raise serializers.ValidationError("No puedes usar un trabajo de otro usuario.")
+
+        return value
+
+    def validate_material(self, value):
+        request = self.context.get("request")
+
+        if request and value.owner_id != request.user.id:
+            raise serializers.ValidationError("No puedes usar un material de otro usuario.")
+
+        return value

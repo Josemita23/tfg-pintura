@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.conf import settings
 from django.db import models
 
 from budgets.models import Budget
@@ -13,6 +14,14 @@ class Job(models.Model):
         FINISHED = "FINISHED", "Finalizado"
         CANCELLED = "CANCELLED", "Cancelado"
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="jobs",
+        null=True,
+        blank=True,
+        verbose_name="Usuario",
+    )
     client = models.ForeignKey(
         Client,
         on_delete=models.PROTECT,

@@ -32,6 +32,22 @@ class JobSerializer(serializers.ModelSerializer):
     def get_client_name(self, obj):
         return str(obj.client)
 
+    def validate_client(self, value):
+        request = self.context.get("request")
+
+        if request and value.owner_id != request.user.id:
+            raise serializers.ValidationError("No puedes usar un cliente de otro usuario.")
+
+        return value
+
+    def validate_budget(self, value):
+        request = self.context.get("request")
+
+        if value and request and value.owner_id != request.user.id:
+            raise serializers.ValidationError("No puedes usar un presupuesto de otro usuario.")
+
+        return value
+
     def validate(self, attrs):
         start_date = attrs.get("start_date", getattr(self.instance, "start_date", None))
         end_date = attrs.get("end_date", getattr(self.instance, "end_date", None))

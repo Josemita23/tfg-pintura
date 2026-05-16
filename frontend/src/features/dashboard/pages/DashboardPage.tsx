@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 
+import { useAuth } from "../../auth/AuthContext";
 import "../styles/DashboardPage.css";
 
 const stats = [
@@ -82,11 +83,14 @@ const alerts = [
 ];
 
 export function DashboardPage() {
+  const { user } = useAuth();
+  const firstName = user?.full_name?.trim().split(/\s+/)[0] || "Usuario";
+
   return (
     <section className="dashboard-page">
       <div className="page-header dashboard-page__header">
         <div>
-          <h1 className="page-header__title">¡Hola, Manuel!</h1>
+          <h1 className="page-header__title">¡Hola, {firstName}!</h1>
           <p className="page-header__subtitle">Aquí tienes un resumen de tu actividad</p>
         </div>
       </div>

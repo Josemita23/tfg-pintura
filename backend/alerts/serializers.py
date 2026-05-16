@@ -34,3 +34,20 @@ class AlertSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def _validate_owner(self, value, message):
+        request = self.context.get("request")
+
+        if value and request and value.owner_id != request.user.id:
+            raise serializers.ValidationError(message)
+
+        return value
+
+    def validate_material(self, value):
+        return self._validate_owner(value, "No puedes usar un material de otro usuario.")
+
+    def validate_job(self, value):
+        return self._validate_owner(value, "No puedes usar un trabajo de otro usuario.")
+
+    def validate_calendar_event(self, value):
+        return self._validate_owner(value, "No puedes usar un evento de otro usuario.")

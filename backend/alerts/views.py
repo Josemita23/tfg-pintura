@@ -1,6 +1,6 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Alert
@@ -15,7 +15,17 @@ class AlertViewSet(viewsets.ModelViewSet):
         "calendar_event",
     ).all()
     serializer_class = AlertSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Alert.objects.select_related(
+            "material",
+            "job",
+            "calendar_event",
+        ).filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
     @action(detail=True, methods=["post"], url_path="mark-as-read")
     def mark_as_read(self, request, pk=None):
@@ -28,7 +38,7 @@ class AlertViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="mark-all-as-read")
     def mark_all_as_read(self, request):
-        updated_count = Alert.objects.filter(is_read=False).update(is_read=True)
+        updated_count = self.get_queryset().filter(is_read=False).update(is_read=True)
 
         return Response(
             {"detail": f"{updated_count} alertas marcadas como leídas."},
@@ -37,7 +47,7 @@ class AlertViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="generate-stock-alerts")
     def generate_stock_alerts(self, request):
-        generated_alerts = generate_stock_alerts_for_all_materials()
+        generated_alerts = generate_stock_alerts_for_all_materials(owner=request.user)
 
         serializer = self.get_serializer(generated_alerts, many=True)
 

@@ -1,6 +1,8 @@
 import { Bell, Building2, Check, Clock, Save, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
+import { useAuth } from "../../auth/AuthContext";
+import { api } from "../../../services/api";
 import "../styles/SettingsPage.css";
 
 type SettingsFormData = {
@@ -17,7 +19,17 @@ type SettingsFormData = {
   upcomingJobDays: string;
 };
 
-const storageKey = "pintura-plus-settings";
+type ProfileResponse = {
+  user: {
+    id: number;
+    username: string;
+    full_name: string;
+    email: string;
+    is_staff: boolean;
+  };
+};
+
+const storageKeyPrefix = "pintura-plus-settings";
 
 const defaultSettings: SettingsFormData = {
   professionalName: "Manuel Lopez",
@@ -33,7 +45,11 @@ const defaultSettings: SettingsFormData = {
   upcomingJobDays: "3",
 };
 
-function loadSettings() {
+function getStorageKey(userId: number | undefined) {
+  return `${storageKeyPrefix}-${userId ?? "guest"}`;
+}
+
+function loadSettings(storageKey: string) {
   const storedSettings = window.localStorage.getItem(storageKey);
 
   if (!storedSettings) {
@@ -51,12 +67,22 @@ function loadSettings() {
 }
 
 export function SettingsPage() {
+  const { user, updateUser } = useAuth();
+  const storageKey = getStorageKey(user?.id);
   const [formData, setFormData] = useState<SettingsFormData>(defaultSettings);
   const [savedMessage, setSavedMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    setFormData(loadSettings());
-  }, []);
+    const storedSettings = loadSettings(storageKey);
+
+    setFormData({
+      ...storedSettings,
+      professionalName: user?.full_name || "",
+      email: user?.email || "",
+      role: storedSettings.role || "Profesional",
+    });
+  }, [storageKey, user]);
 
   const initials = useMemo(() => {
     const words = formData.professionalName.trim().split(/\s+/).filter(Boolean);
@@ -77,19 +103,58 @@ export function SettingsPage() {
       [field]: value,
     }));
     setSavedMessage("");
+    setErrorMessage("");
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    window.localStorage.setItem(storageKey, JSON.stringify(formData));
-    setSavedMessage("Configuracion guardada correctamente.");
+    const professionalName = formData.professionalName.trim();
+    const email = formData.email.trim();
+
+    if (!professionalName) {
+      setErrorMessage("El nombre del profesional es obligatorio.");
+      return;
+    }
+
+    if (!email) {
+      setErrorMessage("El email es obligatorio.");
+      return;
+    }
+
+    const nextFormData = {
+      ...formData,
+      professionalName,
+      email,
+    };
+
+    try {
+      const response = await api.patch<ProfileResponse>("/auth/profile/", {
+        full_name: professionalName,
+        email,
+      });
+
+      window.localStorage.setItem(storageKey, JSON.stringify(nextFormData));
+      setFormData(nextFormData);
+
+      updateUser(response.data.user);
+      setSavedMessage("Configuracion guardada correctamente.");
+    } catch {
+      setErrorMessage("No se han podido guardar los datos del perfil.");
+    }
   }
 
   function handleReset() {
-    setFormData(defaultSettings);
-    window.localStorage.setItem(storageKey, JSON.stringify(defaultSettings));
+    const nextFormData = {
+      ...defaultSettings,
+      professionalName: user?.full_name || defaultSettings.professionalName,
+      email: user?.email || defaultSettings.email,
+    };
+
+    setFormData(nextFormData);
+    window.localStorage.setItem(storageKey, JSON.stringify(nextFormData));
     setSavedMessage("Configuracion restablecida.");
+    setErrorMessage("");
   }
 
   return (
@@ -133,6 +198,7 @@ export function SettingsPage() {
                   type="text"
                   value={formData.professionalName}
                   onChange={(event) => updateField("professionalName", event.target.value)}
+                  required
                 />
               </label>
 
@@ -160,6 +226,7 @@ export function SettingsPage() {
                   type="email"
                   value={formData.email}
                   onChange={(event) => updateField("email", event.target.value)}
+                  required
                 />
               </label>
             </div>
@@ -271,6 +338,7 @@ export function SettingsPage() {
           </section>
 
           <footer className="settings-actions">
+            {errorMessage && <span className="settings-actions__error">{errorMessage}</span>}
             {savedMessage && <span>{savedMessage}</span>}
 
             <button type="button" onClick={handleReset}>

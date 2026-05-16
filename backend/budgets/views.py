@@ -1,6 +1,6 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from jobs.models import Job
@@ -13,7 +13,15 @@ from .serializers import BudgetItemSerializer, BudgetSerializer
 class BudgetViewSet(viewsets.ModelViewSet):
     queryset = Budget.objects.select_related("client").prefetch_related("items").all()
     serializer_class = BudgetSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Budget.objects.select_related("client").prefetch_related("items").filter(
+            owner=self.request.user
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
     @action(detail=True, methods=["post"], url_path="convert-to-job")
     def convert_to_job(self, request, pk=None):
@@ -38,6 +46,7 @@ class BudgetViewSet(viewsets.ModelViewSet):
             )
 
         job = Job.objects.create(
+            owner=budget.owner,
             client=budget.client,
             budget=budget,
             title=request.data.get("title", f"Trabajo asociado a {budget.code}"),
@@ -57,4 +66,9 @@ class BudgetViewSet(viewsets.ModelViewSet):
 class BudgetItemViewSet(viewsets.ModelViewSet):
     queryset = BudgetItem.objects.select_related("budget", "budget__client").all()
     serializer_class = BudgetItemSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return BudgetItem.objects.select_related("budget", "budget__client").filter(
+            budget__owner=self.request.user
+        )

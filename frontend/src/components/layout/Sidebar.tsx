@@ -5,6 +5,7 @@ import {
   FileText,
   Home,
   Layers,
+  LogOut,
   Paintbrush,
   Settings,
   Users,
@@ -13,6 +14,7 @@ import {
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 
+import { useAuth } from "../../features/auth/AuthContext";
 import { api } from "../../services/api";
 import type { Alert } from "../../types/alert";
 
@@ -29,7 +31,15 @@ const menuItems = [
 ];
 
 export function Sidebar() {
+  const { logout, user } = useAuth();
   const [unreadAlertsCount, setUnreadAlertsCount] = useState(0);
+  const displayName = user?.full_name || "Usuario";
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase())
+    .join("");
 
   async function loadUnreadAlertsCount() {
     try {
@@ -89,11 +99,21 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar__user">
-        <div className="sidebar__avatar">ML</div>
+        <div className="sidebar__avatar">{initials || "U"}</div>
         <div>
-          <p className="sidebar__user-name">Manuel López</p>
+          <p className="sidebar__user-name">{displayName}</p>
           <p className="sidebar__user-role">Profesional</p>
         </div>
+
+        <button
+          className="sidebar__logout"
+          type="button"
+          onClick={logout}
+          aria-label="Cerrar sesion"
+          title="Cerrar sesion"
+        >
+          <LogOut size={16} />
+        </button>
       </div>
     </aside>
   );

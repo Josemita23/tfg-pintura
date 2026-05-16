@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers, viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 
 from .models import Job
 from .serializers import JobSerializer
@@ -70,6 +70,7 @@ def sync_job_calendar_event(job):
 
     while current_date <= end_date:
         CalendarEvent.objects.create(
+            owner=job.owner,
             job=job,
             title=build_calendar_event_title(job),
             event_type=CalendarEvent.EventType.JOB,
@@ -85,12 +86,15 @@ def sync_job_calendar_event(job):
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.select_related("client", "budget").all()
     serializer_class = JobSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Job.objects.select_related("client", "budget").filter(owner=self.request.user)
 
     def perform_create(self, serializer):
         try:
             with transaction.atomic():
-                job = serializer.save()
+                job = serializer.save(owner=self.request.user)
                 sync_job_calendar_event(job)
         except DjangoValidationError as error:
             raise serializers.ValidationError(format_django_validation_error(error))

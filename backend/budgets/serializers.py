@@ -19,6 +19,14 @@ class BudgetItemSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "amount", "created_at", "updated_at"]
 
+    def validate_budget(self, value):
+        request = self.context.get("request")
+
+        if request and value.owner_id != request.user.id:
+            raise serializers.ValidationError("No puedes usar un presupuesto de otro usuario.")
+
+        return value
+
 
 class BudgetSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source="client.__str__", read_only=True)
@@ -51,3 +59,11 @@ class BudgetSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def validate_client(self, value):
+        request = self.context.get("request")
+
+        if request and value.owner_id != request.user.id:
+            raise serializers.ValidationError("No puedes usar un cliente de otro usuario.")
+
+        return value

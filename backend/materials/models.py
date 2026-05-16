@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -12,6 +13,14 @@ class Material(models.Model):
         LOW_STOCK = "LOW_STOCK", "Stock bajo"
         OUT_OF_STOCK = "OUT_OF_STOCK", "Agotado"
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="materials",
+        null=True,
+        blank=True,
+        verbose_name="Usuario",
+    )
     name = models.CharField(max_length=150, verbose_name="Nombre")
     material_type = models.CharField(max_length=100, blank=True, verbose_name="Tipo")
     provider = models.CharField(max_length=150, blank=True, verbose_name="Proveedor")

@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers, viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 
 from alerts.services import sync_stock_alert_for_material
 
@@ -15,10 +15,13 @@ def format_django_validation_error(error):
 class MaterialViewSet(viewsets.ModelViewSet):
     queryset = Material.objects.all()
     serializer_class = MaterialSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Material.objects.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
-        material = serializer.save()
+        material = serializer.save(owner=self.request.user)
         sync_stock_alert_for_material(material)
 
     def perform_update(self, serializer):
@@ -29,7 +32,13 @@ class MaterialViewSet(viewsets.ModelViewSet):
 class MaterialConsumptionViewSet(viewsets.ModelViewSet):
     queryset = MaterialConsumption.objects.select_related("job", "material").all()
     serializer_class = MaterialConsumptionSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return MaterialConsumption.objects.select_related("job", "material").filter(
+            job__owner=self.request.user,
+            material__owner=self.request.user,
+        )
 
     def perform_create(self, serializer):
         try:

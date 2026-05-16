@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.conf import settings
 from django.db import models
 
 from jobs.models import Job
@@ -16,6 +17,14 @@ class CalendarEvent(models.Model):
         COMPLETED = "COMPLETED", "Completado"
         CANCELLED = "CANCELLED", "Cancelado"
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="calendar_events",
+        null=True,
+        blank=True,
+        verbose_name="Usuario",
+    )
     job = models.ForeignKey(
         Job,
         on_delete=models.CASCADE,

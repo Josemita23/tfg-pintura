@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -7,8 +8,12 @@ from .models import Client
 class ClientAPITestCase(APITestCase):
     def setUp(self):
         self.clients_url = "/api/clients/"
+        User = get_user_model()
+        self.user = User.objects.create_user(username="tester", password="test123")
+        self.client.force_authenticate(user=self.user)
 
         self.client_one = Client.objects.create(
+            owner=self.user,
             first_name="Manuel",
             last_name="López",
             phone="600000000",
@@ -19,6 +24,7 @@ class ClientAPITestCase(APITestCase):
         )
 
         self.client_two = Client.objects.create(
+            owner=self.user,
             first_name="Carmen",
             last_name="Ruiz",
             phone="611111111",
@@ -115,6 +121,7 @@ class ClientAPITestCase(APITestCase):
 
         created_client = Client.objects.get(phone="622222222")
 
+        self.assertEqual(created_client.owner, self.user)
         self.assertEqual(created_client.first_name, "Pedro")
         self.assertEqual(created_client.last_name, "Jiménez")
         self.assertEqual(created_client.email, "pedro@example.com")
@@ -162,3 +169,21 @@ class ClientAPITestCase(APITestCase):
         self.assertEqual(self.client_one.phone, "633333333")
         self.assertEqual(self.client_one.address, "Nueva dirección, Sevilla")
         self.assertEqual(self.client_one.status, Client.Status.INACTIVE)
+
+    def test_clientes_de_otro_usuario_no_se_muestran(self):
+        User = get_user_model()
+        other_user = User.objects.create_user(username="other", password="test123")
+        Client.objects.create(
+            owner=other_user,
+            first_name="Otro",
+            last_name="Usuario",
+            phone="699999999",
+            email="otro@example.com",
+            status=Client.Status.ACTIVE,
+        )
+
+        response = self.client.get(self.clients_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertNotIn("Otro Usuario", [client["full_name"] for client in response.data])

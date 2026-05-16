@@ -64,12 +64,13 @@ def sync_stock_alert_for_material(material):
         return existing_alert
 
     return Alert.objects.create(
+        owner=material.owner,
         material=material,
         **alert_data,
     )
 
 
-def generate_stock_alerts_for_all_materials():
+def generate_stock_alerts_for_all_materials(owner=None):
     from materials.models import Material
 
     materials = Material.objects.filter(
@@ -78,6 +79,9 @@ def generate_stock_alerts_for_all_materials():
             Material.Status.OUT_OF_STOCK,
         ]
     )
+
+    if owner:
+        materials = materials.filter(owner=owner)
 
     generated_alerts = []
 

@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import models
 
 from clients.models import Client
@@ -13,6 +14,14 @@ class Budget(models.Model):
         REJECTED = "REJECTED", "Rechazado"
         CONVERTED = "CONVERTED", "Convertido en trabajo"
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="budgets",
+        null=True,
+        blank=True,
+        verbose_name="Usuario",
+    )
     client = models.ForeignKey(
         Client,
         on_delete=models.PROTECT,

@@ -44,6 +44,9 @@ def find_overlapping_calendar_events(model, start_at, end_at, instance=None):
         end_at__gt=start_at,
     ).exclude(status=model.Status.CANCELLED)
 
+    if instance and getattr(instance, "owner_id", None):
+        candidates = candidates.filter(owner=instance.owner)
+
     if instance and instance.pk:
         candidates = candidates.exclude(pk=instance.pk)
 

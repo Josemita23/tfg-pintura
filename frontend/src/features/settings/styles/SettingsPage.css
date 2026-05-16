@@ -204,6 +204,10 @@
   font-weight: 800;
 }
 
+.settings-actions .settings-actions__error {
+  color: var(--color-danger);
+}
+
 .settings-actions button {
   min-height: 42px;
   padding: 0 15px;

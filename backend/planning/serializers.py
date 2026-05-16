@@ -51,6 +51,14 @@ class CalendarEventSerializer(serializers.ModelSerializer):
 
         return obj.title
 
+    def validate_job(self, value):
+        request = self.context.get("request")
+
+        if value and request and value.owner_id != request.user.id:
+            raise serializers.ValidationError("No puedes usar un trabajo de otro usuario.")
+
+        return value
+
     def validate(self, attrs):
         start_at = attrs.get("start_at", getattr(self.instance, "start_at", None))
         end_at = attrs.get("end_at", getattr(self.instance, "end_at", None))

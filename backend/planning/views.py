@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers, viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 
 from .models import CalendarEvent
 from .serializers import CalendarEventSerializer
@@ -53,12 +53,17 @@ def protect_job_event_type(serializer):
 class CalendarEventViewSet(viewsets.ModelViewSet):
     queryset = CalendarEvent.objects.select_related("job", "job__client").all()
     serializer_class = CalendarEventSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return CalendarEvent.objects.select_related("job", "job__client").filter(
+            owner=self.request.user
+        )
 
     def perform_create(self, serializer):
         try:
             with transaction.atomic():
-                event = serializer.save()
+                event = serializer.save(owner=self.request.user)
                 sync_calendar_event_with_job(event)
         except DjangoValidationError as error:
             raise serializers.ValidationError(format_django_validation_error(error))

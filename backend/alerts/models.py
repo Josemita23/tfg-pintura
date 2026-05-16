@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 from jobs.models import Job
@@ -19,6 +20,14 @@ class Alert(models.Model):
         MEDIUM = "MEDIUM", "Media"
         HIGH = "HIGH", "Alta"
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="alerts",
+        null=True,
+        blank=True,
+        verbose_name="Usuario",
+    )
     alert_type = models.CharField(
         max_length=30,
         choices=AlertType.choices,

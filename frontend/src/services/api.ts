@@ -6,3 +6,12 @@ export const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+export function setAuthToken(token: string | null) {
+  if (token) {
+    api.defaults.headers.common.Authorization = `Token ${token}`;
+    return;
+  }
+
+  delete api.defaults.headers.common.Authorization;
+}
