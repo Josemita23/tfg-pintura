@@ -39,4 +39,5 @@ urlpatterns = [
     path("api/materials/", include("materials.urls")),
     path("api/planning/", include("planning.urls")),
     path("api/alerts/", include("alerts.urls")),
+    path("api/app-settings/", include("app_settings.urls")),
 ]

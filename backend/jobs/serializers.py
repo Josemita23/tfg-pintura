@@ -35,7 +35,13 @@ class JobSerializer(serializers.ModelSerializer):
     def validate_client(self, value):
         request = self.context.get("request")
 
-        if request and value.owner_id != request.user.id:
+        if (
+            request
+            and request.user.is_authenticated
+            and hasattr(value, "owner_id")
+            and value.owner_id
+            and value.owner_id != request.user.id
+        ):
             raise serializers.ValidationError("No puedes usar un cliente de otro usuario.")
 
         return value
@@ -43,7 +49,14 @@ class JobSerializer(serializers.ModelSerializer):
     def validate_budget(self, value):
         request = self.context.get("request")
 
-        if value and request and value.owner_id != request.user.id:
+        if (
+            value
+            and request
+            and request.user.is_authenticated
+            and hasattr(value, "owner_id")
+            and value.owner_id
+            and value.owner_id != request.user.id
+        ):
             raise serializers.ValidationError("No puedes usar un presupuesto de otro usuario.")
 
         return value

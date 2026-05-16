@@ -29,6 +29,15 @@ type ProfileResponse = {
   };
 };
 
+type AppSettingsResponse = {
+  id: number;
+  default_start_time: string;
+  default_end_time: string;
+  low_stock_threshold: number;
+  upcoming_job_days: number;
+  updated_at: string;
+};
+
 const storageKeyPrefix = "pintura-plus-settings";
 
 const defaultSettings: SettingsFormData = {
@@ -66,6 +75,24 @@ function loadSettings(storageKey: string) {
   }
 }
 
+function normalizeTimeInputValue(value: string | undefined) {
+  return value ? value.slice(0, 5) : "";
+}
+
+function parseIntegerInput(value: string, fallback: number) {
+  const parsedValue = Number.parseInt(value, 10);
+
+  if (Number.isNaN(parsedValue)) {
+    return fallback;
+  }
+
+  return parsedValue;
+}
+
+function notifyAlertsChanged() {
+  window.dispatchEvent(new Event("alerts:changed"));
+}
+
 export function SettingsPage() {
   const { user, updateUser } = useAuth();
   const storageKey = getStorageKey(user?.id);
@@ -74,14 +101,55 @@ export function SettingsPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    const storedSettings = loadSettings(storageKey);
+    let isMounted = true;
 
-    setFormData({
-      ...storedSettings,
-      professionalName: user?.full_name || "",
-      email: user?.email || "",
-      role: storedSettings.role || "Profesional",
-    });
+    async function loadUserSettings() {
+      const storedSettings = loadSettings(storageKey);
+
+      try {
+        const response = await api.get<AppSettingsResponse>("/app-settings/");
+        const serverSettings = response.data;
+
+        if (!isMounted) {
+          return;
+        }
+
+        const nextFormData = {
+          ...storedSettings,
+          professionalName: user?.full_name || "",
+          email: user?.email || "",
+          role: storedSettings.role || "Profesional",
+          defaultStartTime:
+            normalizeTimeInputValue(serverSettings.default_start_time) ||
+            storedSettings.defaultStartTime,
+          defaultEndTime:
+            normalizeTimeInputValue(serverSettings.default_end_time) ||
+            storedSettings.defaultEndTime,
+          lowStockThreshold: String(serverSettings.low_stock_threshold),
+          upcomingJobDays: String(serverSettings.upcoming_job_days),
+        };
+
+        setFormData(nextFormData);
+        window.localStorage.setItem(storageKey, JSON.stringify(nextFormData));
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setFormData({
+          ...storedSettings,
+          professionalName: user?.full_name || "",
+          email: user?.email || "",
+          role: storedSettings.role || "Profesional",
+        });
+      }
+    }
+
+    loadUserSettings();
+
+    return () => {
+      isMounted = false;
+    };
   }, [storageKey, user]);
 
   const initials = useMemo(() => {
@@ -111,6 +179,8 @@ export function SettingsPage() {
 
     const professionalName = formData.professionalName.trim();
     const email = formData.email.trim();
+    const upcomingJobDays = parseIntegerInput(formData.upcomingJobDays, 3);
+    const lowStockThreshold = parseIntegerInput(formData.lowStockThreshold, 5);
 
     if (!professionalName) {
       setErrorMessage("El nombre del profesional es obligatorio.");
@@ -122,10 +192,29 @@ export function SettingsPage() {
       return;
     }
 
+    if (formData.defaultStartTime && formData.defaultEndTime) {
+      if (formData.defaultEndTime <= formData.defaultStartTime) {
+        setErrorMessage("La hora de fin debe ser posterior a la hora de inicio.");
+        return;
+      }
+    }
+
+    if (upcomingJobDays < 1 || upcomingJobDays > 365) {
+      setErrorMessage("Los dias de aviso deben estar entre 1 y 365.");
+      return;
+    }
+
+    if (lowStockThreshold < 0) {
+      setErrorMessage("El stock bajo por defecto no puede ser negativo.");
+      return;
+    }
+
     const nextFormData = {
       ...formData,
       professionalName,
       email,
+      upcomingJobDays: String(upcomingJobDays),
+      lowStockThreshold: String(lowStockThreshold),
     };
 
     try {
@@ -134,27 +223,49 @@ export function SettingsPage() {
         email,
       });
 
+      await api.patch<AppSettingsResponse>("/app-settings/", {
+        default_start_time: formData.defaultStartTime,
+        default_end_time: formData.defaultEndTime,
+        low_stock_threshold: lowStockThreshold,
+        upcoming_job_days: upcomingJobDays,
+      });
+
       window.localStorage.setItem(storageKey, JSON.stringify(nextFormData));
       setFormData(nextFormData);
-
       updateUser(response.data.user);
+      notifyAlertsChanged();
       setSavedMessage("Configuracion guardada correctamente.");
+      setErrorMessage("");
     } catch {
-      setErrorMessage("No se han podido guardar los datos del perfil.");
+      setErrorMessage("No se han podido guardar los datos de configuracion.");
+      setSavedMessage("");
     }
   }
 
-  function handleReset() {
+  async function handleReset() {
     const nextFormData = {
       ...defaultSettings,
       professionalName: user?.full_name || defaultSettings.professionalName,
       email: user?.email || defaultSettings.email,
     };
 
-    setFormData(nextFormData);
-    window.localStorage.setItem(storageKey, JSON.stringify(nextFormData));
-    setSavedMessage("Configuracion restablecida.");
-    setErrorMessage("");
+    try {
+      await api.patch<AppSettingsResponse>("/app-settings/", {
+        default_start_time: nextFormData.defaultStartTime,
+        default_end_time: nextFormData.defaultEndTime,
+        low_stock_threshold: Number.parseInt(nextFormData.lowStockThreshold, 10),
+        upcoming_job_days: Number.parseInt(nextFormData.upcomingJobDays, 10),
+      });
+
+      setFormData(nextFormData);
+      window.localStorage.setItem(storageKey, JSON.stringify(nextFormData));
+      notifyAlertsChanged();
+      setSavedMessage("Configuracion restablecida.");
+      setErrorMessage("");
+    } catch {
+      setErrorMessage("No se ha podido restablecer la configuracion.");
+      setSavedMessage("");
+    }
   }
 
   return (

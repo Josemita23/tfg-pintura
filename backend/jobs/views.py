@@ -81,7 +81,13 @@ def sync_job_calendar_event(job):
             status=get_calendar_status_from_job(job),
         )
         current_date += timedelta(days=1)
+        
+def sync_job_dependent_data(job, owner):
+    sync_job_calendar_event(job)
 
+    from alerts.services import generate_due_job_reminder_alerts
+
+    generate_due_job_reminder_alerts(owner=owner)
 
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.select_related("client", "budget").all()
@@ -95,7 +101,7 @@ class JobViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 job = serializer.save(owner=self.request.user)
-                sync_job_calendar_event(job)
+                sync_job_dependent_data(job, owner=self.request.user)
         except DjangoValidationError as error:
             raise serializers.ValidationError(format_django_validation_error(error))
 
@@ -103,6 +109,6 @@ class JobViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 job = serializer.save()
-                sync_job_calendar_event(job)
+                sync_job_dependent_data(job, owner=self.request.user)
         except DjangoValidationError as error:
             raise serializers.ValidationError(format_django_validation_error(error))

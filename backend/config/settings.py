@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "materials",
     "planning",
     "alerts",
+    "app_settings",
 ]
 
 MIDDLEWARE = [
