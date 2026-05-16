@@ -7,12 +7,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .budget-detail-modal {
-  width: min(980px, 100%);
+  width: min(1120px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   overflow-y: auto;
+  overflow-x: hidden;
   border-radius: 22px;
   background: #ffffff;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
@@ -55,6 +57,7 @@
 
 .budget-detail-modal__content {
   padding: 24px 26px 26px;
+  min-width: 0;
 }
 
 .budget-detail-summary {
@@ -116,14 +119,92 @@
   font-size: 13px;
 }
 
+.budget-base-prices {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: #fafbfe;
+}
+
+.budget-base-prices__select {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 12px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.budget-base-prices__select select {
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--color-text);
+  outline: none;
+}
+
+.budget-base-prices__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.budget-base-prices__grid label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.budget-base-prices__grid label > span {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.budget-base-prices__grid label > div {
+  position: relative;
+}
+
+.budget-base-prices__grid input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 70px 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  outline: none;
+}
+
+.budget-base-prices__grid small {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 800;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
 .budget-item-form {
   display: grid;
-  grid-template-columns: 1.5fr 0.7fr 0.8fr 0.8fr auto;
+  grid-template-columns:
+    minmax(220px, 1.5fr)
+    minmax(90px, 0.65fr)
+    minmax(110px, 0.75fr)
+    minmax(120px, 0.75fr)
+    max-content;
   gap: 10px;
   margin-bottom: 14px;
+  min-width: 0;
 }
 
 .budget-item-form input {
+  min-width: 0;
   height: 42px;
   padding: 0 12px;
   border: 1px solid var(--color-border);
@@ -131,7 +212,30 @@
   outline: none;
 }
 
+.budget-item-form__money {
+  position: relative;
+  min-width: 0;
+  display: block;
+}
+
+.budget-item-form__money input {
+  width: 100%;
+  padding-right: 32px;
+}
+
+.budget-item-form__money span {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 800;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
 .budget-item-form button {
+  min-width: 108px;
   min-height: 42px;
   padding: 0 14px;
   border: 0;
@@ -141,8 +245,10 @@
   font-weight: 800;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .budget-item-form button:disabled {
@@ -162,6 +268,7 @@
 
 .budget-detail-table-wrapper {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   border: 1px solid var(--color-border);
   border-radius: 16px;
@@ -258,7 +365,16 @@
   }
 
   .budget-item-form {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .budget-base-prices__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .budget-item-form input:first-child,
+  .budget-item-form button {
+    grid-column: 1 / -1;
   }
 }
 
@@ -266,9 +382,30 @@
   .budget-detail-backdrop {
     padding: 14px;
     align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .budget-detail-modal {
+    width: 100%;
+    max-height: calc(100vh - 28px);
+    border-radius: 18px;
+  }
+
+  .budget-detail-modal__header,
+  .budget-detail-modal__content {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
   .budget-detail-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-item-form {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-base-prices__grid {
     grid-template-columns: 1fr;
   }
 

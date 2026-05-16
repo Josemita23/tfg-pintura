@@ -136,3 +136,40 @@ class BudgetItem(models.Model):
         budget = self.budget
         super().delete(*args, **kwargs)
         budget.recalculate_totals()
+
+
+class BudgetBasePrice(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="budget_base_prices",
+        null=True,
+        blank=True,
+        verbose_name="Usuario",
+    )
+    name = models.CharField(max_length=120, verbose_name="Tipo de trabajo")
+    description = models.CharField(max_length=255, verbose_name="Descripcion para presupuesto")
+    unit = models.CharField(max_length=50, default="m2", verbose_name="Unidad")
+    unit_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name="Precio referencia",
+    )
+    is_active = models.BooleanField(default=True, verbose_name="Activo")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creacion")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Ultima actualizacion")
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Precio base"
+        verbose_name_plural = "Precios base"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "name"],
+                name="unique_budget_base_price_per_owner",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.name} - {self.unit_price} €/{self.unit}"

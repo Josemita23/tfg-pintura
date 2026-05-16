@@ -6,8 +6,36 @@ from rest_framework.response import Response
 from jobs.models import Job
 from jobs.serializers import JobSerializer
 
-from .models import Budget, BudgetItem
-from .serializers import BudgetItemSerializer, BudgetSerializer
+from .models import Budget, BudgetBasePrice, BudgetItem
+from .serializers import BudgetBasePriceSerializer, BudgetItemSerializer, BudgetSerializer
+
+
+DEFAULT_BASE_PRICES = [
+    {
+        "name": "Pintar pared",
+        "description": "Pintura de pared",
+        "unit": "m2",
+        "unit_price": "8.00",
+    },
+    {
+        "name": "Alisar pared",
+        "description": "Alisado de pared",
+        "unit": "m2",
+        "unit_price": "12.00",
+    },
+    {
+        "name": "Empapelar pared",
+        "description": "Empapelado de pared",
+        "unit": "m2",
+        "unit_price": "10.00",
+    },
+    {
+        "name": "Pintar techo",
+        "description": "Pintura de techo",
+        "unit": "m2",
+        "unit_price": "9.00",
+    },
+]
 
 
 class BudgetViewSet(viewsets.ModelViewSet):
@@ -72,3 +100,25 @@ class BudgetItemViewSet(viewsets.ModelViewSet):
         return BudgetItem.objects.select_related("budget", "budget__client").filter(
             budget__owner=self.request.user
         )
+
+
+class BudgetBasePriceViewSet(viewsets.ModelViewSet):
+    serializer_class = BudgetBasePriceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return BudgetBasePrice.objects.filter(owner=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        if not BudgetBasePrice.objects.filter(owner=request.user).exists():
+            BudgetBasePrice.objects.bulk_create(
+                [
+                    BudgetBasePrice(owner=request.user, **base_price)
+                    for base_price in DEFAULT_BASE_PRICES
+                ]
+            )
+
+        return super().list(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)

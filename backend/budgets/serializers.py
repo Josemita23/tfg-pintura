@@ -1,6 +1,28 @@
 from rest_framework import serializers
 
-from .models import Budget, BudgetItem
+from .models import Budget, BudgetBasePrice, BudgetItem
+
+
+class BudgetBasePriceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BudgetBasePrice
+        fields = [
+            "id",
+            "name",
+            "description",
+            "unit",
+            "unit_price",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate_unit_price(self, value):
+        if value < 0:
+            raise serializers.ValidationError("El precio de referencia no puede ser negativo.")
+
+        return value
 
 
 class BudgetItemSerializer(serializers.ModelSerializer):

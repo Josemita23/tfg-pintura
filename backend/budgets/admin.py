@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Budget, BudgetItem
+from .models import Budget, BudgetBasePrice, BudgetItem
 
 
 class BudgetItemInline(admin.TabularInline):
@@ -20,3 +20,10 @@ class BudgetAdmin(admin.ModelAdmin):
 class BudgetItemAdmin(admin.ModelAdmin):
     list_display = ("budget", "description", "quantity", "unit", "unit_price", "amount")
     search_fields = ("description", "budget__code")
+
+
+@admin.register(BudgetBasePrice)
+class BudgetBasePriceAdmin(admin.ModelAdmin):
+    list_display = ("name", "owner", "unit_price", "unit", "is_active")
+    list_filter = ("is_active", "unit")
+    search_fields = ("name", "description", "owner__username")

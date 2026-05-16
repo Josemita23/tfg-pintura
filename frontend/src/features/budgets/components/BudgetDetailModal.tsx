@@ -1,6 +1,7 @@
 import { Plus, Trash2, X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
+import { api } from "../../../services/api";
 import type { Budget, BudgetItem } from "../../../types/budget";
 import "./BudgetDetailModal.css";
 
@@ -9,6 +10,15 @@ type BudgetItemFormData = {
   quantity: string;
   unit: string;
   unit_price: string;
+};
+
+type BudgetBasePrice = {
+  id: number;
+  name: string;
+  description: string;
+  unit: string;
+  unit_price: string;
+  is_active: boolean;
 };
 
 type BudgetDetailModalProps = {
@@ -24,9 +34,9 @@ type BudgetDetailModalProps = {
 
 const initialItemFormData: BudgetItemFormData = {
   description: "",
-  quantity: "1.00",
-  unit: "unidad",
-  unit_price: "0.00",
+  quantity: "",
+  unit: "",
+  unit_price: "",
 };
 
 const statusLabels = {
@@ -59,7 +69,24 @@ export function BudgetDetailModal({
   onConvertToJob,
 }: BudgetDetailModalProps) {
   const [itemFormData, setItemFormData] = useState<BudgetItemFormData>(initialItemFormData);
+  const [basePrices, setBasePrices] = useState<BudgetBasePrice[]>([]);
+  const [selectedBasePriceId, setSelectedBasePriceId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    api
+      .get<BudgetBasePrice[]>("/budgets/base-prices/")
+      .then((response) => {
+        setBasePrices(response.data.filter((basePrice) => basePrice.is_active));
+      })
+      .catch(() => {
+        setBasePrices([]);
+      });
+  }, [isOpen]);
 
   if (!isOpen || !budget) {
     return null;
@@ -72,6 +99,54 @@ export function BudgetDetailModal({
     }));
   };
 
+  const handleBasePriceChange = (basePriceId: string) => {
+    setSelectedBasePriceId(basePriceId);
+
+    const selectedBasePrice = basePrices.find(
+      (basePrice) => String(basePrice.id) === basePriceId
+    );
+
+    if (!selectedBasePrice) {
+      return;
+    }
+
+    setItemFormData((currentData) => ({
+      ...currentData,
+      description: selectedBasePrice.description,
+      unit: selectedBasePrice.unit,
+      unit_price: selectedBasePrice.unit_price,
+    }));
+  };
+
+  const handleBasePriceValueChange = (basePriceId: number, unitPrice: string) => {
+    setBasePrices((currentBasePrices) =>
+      currentBasePrices.map((basePrice) =>
+        basePrice.id === basePriceId ? { ...basePrice, unit_price: unitPrice } : basePrice
+      )
+    );
+
+    if (selectedBasePriceId === String(basePriceId)) {
+      setItemFormData((currentData) => ({
+        ...currentData,
+        unit_price: unitPrice,
+      }));
+    }
+  };
+
+  const saveBasePrice = async (basePrice: BudgetBasePrice) => {
+    if (!basePrice.unit_price || Number(basePrice.unit_price) < 0) {
+      return;
+    }
+
+    try {
+      await api.patch<BudgetBasePrice>(`/budgets/base-prices/${basePrice.id}/`, {
+        unit_price: basePrice.unit_price,
+      });
+    } catch {
+      setErrorMessage("No se ha podido guardar el precio base.");
+    }
+  };
+
   const handleSubmitItem = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage("");
@@ -81,8 +156,13 @@ export function BudgetDetailModal({
       return;
     }
 
-    if (Number(itemFormData.quantity) <= 0) {
+    if (!itemFormData.quantity || Number(itemFormData.quantity) <= 0) {
       setErrorMessage("La cantidad debe ser mayor que cero.");
+      return;
+    }
+
+    if (!itemFormData.unit_price) {
+      setErrorMessage("El precio unitario es obligatorio.");
       return;
     }
 
@@ -94,6 +174,7 @@ export function BudgetDetailModal({
     try {
       await onAddItem(itemFormData);
       setItemFormData(initialItemFormData);
+      setSelectedBasePriceId("");
     } catch {
       setErrorMessage("No se ha podido añadir el concepto.");
     }
@@ -154,6 +235,44 @@ export function BudgetDetailModal({
               </div>
             </div>
 
+            <section className="budget-base-prices">
+              <label className="budget-base-prices__select">
+                <span>Trabajo habitual</span>
+                <select
+                  value={selectedBasePriceId}
+                  onChange={(event) => handleBasePriceChange(event.target.value)}
+                >
+                  <option value="">Seleccionar trabajo</option>
+                  {basePrices.map((basePrice) => (
+                    <option key={basePrice.id} value={basePrice.id}>
+                      {basePrice.name} - {formatCurrency(basePrice.unit_price)} / {basePrice.unit}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="budget-base-prices__grid">
+                {basePrices.map((basePrice) => (
+                  <label key={basePrice.id}>
+                    <span>{basePrice.name}</span>
+                    <div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={basePrice.unit_price}
+                        onChange={(event) =>
+                          handleBasePriceValueChange(basePrice.id, event.target.value)
+                        }
+                        onBlur={() => saveBasePrice(basePrice)}
+                      />
+                      <small>EUR/{basePrice.unit}</small>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </section>
+
             <form className="budget-item-form" onSubmit={handleSubmitItem}>
               <input
                 type="text"
@@ -168,24 +287,27 @@ export function BudgetDetailModal({
                 min="0"
                 value={itemFormData.quantity}
                 onChange={(event) => handleChange("quantity", event.target.value)}
-                placeholder="Cantidad"
+                placeholder="Metros / cantidad"
               />
 
               <input
                 type="text"
                 value={itemFormData.unit}
                 onChange={(event) => handleChange("unit", event.target.value)}
-                placeholder="Unidad"
+                placeholder="Unidad (opcional)"
               />
 
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={itemFormData.unit_price}
-                onChange={(event) => handleChange("unit_price", event.target.value)}
-                placeholder="Precio"
-              />
+              <label className="budget-item-form__money">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={itemFormData.unit_price}
+                  onChange={(event) => handleChange("unit_price", event.target.value)}
+                  placeholder="Precio"
+                />
+                <span>EUR</span>
+              </label>
 
               <button type="submit" disabled={isSavingItem}>
                 <Plus size={16} />
