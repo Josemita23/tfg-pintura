@@ -29,9 +29,17 @@ class ClientSerializer(serializers.ModelSerializer):
     def validate_phone(self, value):
         normalized_phone = value.replace(" ", "")
 
-        if not normalized_phone.isdigit() or len(normalized_phone) < 9:
+        if not normalized_phone.isdigit() or len(normalized_phone) != 9:
             raise serializers.ValidationError(
-                "Introduce un telefono con un formato correcto."
+                "Introduce un telefono de 9 digitos."
             )
 
-        return value
+        queryset = Client.objects.filter(phone=normalized_phone)
+
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+
+        if queryset.exists():
+            raise serializers.ValidationError("Ya existe un cliente con ese telefono.")
+
+        return normalized_phone

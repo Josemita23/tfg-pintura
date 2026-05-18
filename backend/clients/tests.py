@@ -187,3 +187,44 @@ class ClientAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertNotIn("Otro Usuario", [client["full_name"] for client in response.data])
+
+    def test_telefono_con_espacios_se_normaliza_y_valida_duplicados(self):
+        payload = {
+            "first_name": "Pedro",
+            "last_name": "Gomez",
+            "phone": "600 000 000",
+            "email": "pedro@example.com",
+            "status": Client.Status.ACTIVE,
+        }
+
+        response = self.client.post(self.clients_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("phone", response.data)
+
+        valid_payload = {
+            "first_name": "Laura",
+            "last_name": "Sanchez",
+            "phone": "622 222 222",
+            "email": "laura@example.com",
+            "status": Client.Status.ACTIVE,
+        }
+
+        response = self.client.post(self.clients_url, valid_payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Client.objects.get(email="laura@example.com").phone, "622222222")
+
+    def test_telefono_debe_tener_exactamente_nueve_digitos(self):
+        payload = {
+            "first_name": "Laura",
+            "last_name": "Sanchez",
+            "phone": "6222222221",
+            "email": "laura@example.com",
+            "status": Client.Status.ACTIVE,
+        }
+
+        response = self.client.post(self.clients_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("phone", response.data)
