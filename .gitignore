@@ -22,3 +22,8 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local database and migration backups
+backend/db.sqlite3
+backend/db.sqlite3.backup
+backend/data.json
