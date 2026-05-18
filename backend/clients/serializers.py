@@ -25,3 +25,13 @@ class ClientSerializer(serializers.ModelSerializer):
 
     def get_full_name(self, obj):
         return str(obj)
+
+    def validate_phone(self, value):
+        normalized_phone = value.replace(" ", "")
+
+        if not normalized_phone.isdigit() or len(normalized_phone) < 9:
+            raise serializers.ValidationError(
+                "Introduce un telefono con un formato correcto."
+            )
+
+        return value

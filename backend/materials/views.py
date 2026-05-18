@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Q
 from rest_framework import serializers, viewsets
 from rest_framework.permissions import IsAuthenticated
 
@@ -18,7 +19,22 @@ class MaterialViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Material.objects.filter(owner=self.request.user)
+        queryset = Material.objects.filter(owner=self.request.user)
+        search = self.request.query_params.get("search", "").strip()
+        selected_status = self.request.query_params.get("status", "").strip()
+
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search)
+                | Q(material_type__icontains=search)
+                | Q(provider__icontains=search)
+                | Q(status__icontains=search)
+            )
+
+        if selected_status and selected_status != "ALL":
+            queryset = queryset.filter(status=selected_status)
+
+        return queryset
 
     def perform_create(self, serializer):
         material = serializer.save(owner=self.request.user)

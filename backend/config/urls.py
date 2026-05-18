@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
 
-from .auth_views import login_view, profile_view, register_view
+from .auth_views import login_view, logout_view, profile_view, register_view
 
 
 def health_check(request):
@@ -30,6 +30,7 @@ urlpatterns = [
 
     path("api/health/", health_check),
     path("api/auth/login/", login_view),
+    path("api/auth/logout/", logout_view),
     path("api/auth/register/", register_view),
     path("api/auth/profile/", profile_view),
 

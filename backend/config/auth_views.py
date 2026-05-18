@@ -95,6 +95,15 @@ def login_view(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    if request.auth:
+        request.auth.delete()
+
+    return Response({"detail": "Sesion cerrada correctamente."})
+
+
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def register_view(request):
     serializer = RegisterSerializer(data=request.data)

@@ -2,9 +2,11 @@ from datetime import datetime, timedelta, time
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
-from rest_framework import serializers, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from .models import Job
 from .serializers import JobSerializer
@@ -95,7 +97,25 @@ class JobViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Job.objects.select_related("client", "budget").filter(owner=self.request.user)
+        queryset = Job.objects.select_related("client", "budget").filter(owner=self.request.user)
+        search = self.request.query_params.get("search", "").strip()
+        selected_status = self.request.query_params.get("status", "").strip()
+
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search)
+                | Q(client__first_name__icontains=search)
+                | Q(client__last_name__icontains=search)
+                | Q(address__icontains=search)
+                | Q(start_date__icontains=search)
+                | Q(end_date__icontains=search)
+                | Q(status__icontains=search)
+            )
+
+        if selected_status and selected_status != "ALL":
+            queryset = queryset.filter(status=selected_status)
+
+        return queryset
 
     def perform_create(self, serializer):
         try:
@@ -112,3 +132,26 @@ class JobViewSet(viewsets.ModelViewSet):
                 sync_job_dependent_data(job, owner=self.request.user)
         except DjangoValidationError as error:
             raise serializers.ValidationError(format_django_validation_error(error))
+
+    def destroy(self, request, *args, **kwargs):
+        job = self.get_object()
+
+        has_associated_data = (
+            job.budget_id
+            or job.calendar_events.exists()
+            or job.alerts.exists()
+            or job.material_consumptions.exists()
+        )
+
+        if job.status != Job.Status.PENDING or has_associated_data:
+            return Response(
+                {
+                    "detail": (
+                        "Solo se pueden eliminar trabajos pendientes, sin iniciar "
+                        "y sin informacion relevante asociada."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return super().destroy(request, *args, **kwargs)

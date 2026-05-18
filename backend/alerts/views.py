@@ -22,11 +22,31 @@ class AlertViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Alert.objects.select_related(
+        queryset = Alert.objects.select_related(
             "material",
             "job",
             "calendar_event",
         ).filter(owner=self.request.user)
+        alert_type = self.request.query_params.get("alert_type", "").strip()
+        created_date = self.request.query_params.get("date", "").strip()
+        priority = self.request.query_params.get("priority", "").strip()
+        is_read = self.request.query_params.get("is_read", "").strip().lower()
+
+        if alert_type and alert_type != "ALL":
+            queryset = queryset.filter(alert_type=alert_type)
+
+        if created_date:
+            queryset = queryset.filter(created_at__date=created_date)
+
+        if priority and priority != "ALL":
+            queryset = queryset.filter(priority=priority)
+
+        if is_read in ["true", "1", "read"]:
+            queryset = queryset.filter(is_read=True)
+        elif is_read in ["false", "0", "unread"]:
+            queryset = queryset.filter(is_read=False)
+
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)

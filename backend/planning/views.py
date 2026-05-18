@@ -56,9 +56,23 @@ class CalendarEventViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return CalendarEvent.objects.select_related("job", "job__client").filter(
+        queryset = CalendarEvent.objects.select_related("job", "job__client").filter(
             owner=self.request.user
         )
+        selected_date = self.request.query_params.get("date", "").strip()
+        start_date = self.request.query_params.get("start_date", "").strip()
+        end_date = self.request.query_params.get("end_date", "").strip()
+
+        if selected_date:
+            queryset = queryset.filter(start_at__date=selected_date)
+
+        if start_date:
+            queryset = queryset.filter(start_at__date__gte=start_date)
+
+        if end_date:
+            queryset = queryset.filter(start_at__date__lte=end_date)
+
+        return queryset
 
     def perform_create(self, serializer):
         try:
