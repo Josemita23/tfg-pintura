@@ -20,26 +20,34 @@
 .sidebar__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 34px;
 }
 
 .sidebar__logo {
-  width: 38px;
-  height: 38px;
+  width: 54px;
+  height: 54px;
   border-radius: 12px;
-  background: var(--color-primary-soft);
+  background: transparent;
   color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.sidebar__logo img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
 .sidebar__title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--color-text);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  font-family: "Trebuchet MS", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  color: #000000;
 }
 
 .sidebar__subtitle {

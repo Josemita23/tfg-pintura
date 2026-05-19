@@ -32,6 +32,10 @@ const initialFormData: ClientFormData = {
   status: "ACTIVE",
 };
 
+function normalizePhoneInput(value: string) {
+  return value.replace(/\D/g, "").slice(0, 9);
+}
+
 function mapClientToFormData(client: Client): ClientFormData {
   return {
     first_name: client.first_name,
@@ -146,8 +150,11 @@ export function ClientFormModal({
               Teléfono *
               <input
                 type="text"
+                inputMode="numeric"
+                maxLength={9}
+                pattern="[0-9]{9}"
                 value={formData.phone}
-                onChange={(event) => handleChange("phone", event.target.value)}
+                onChange={(event) => handleChange("phone", normalizePhoneInput(event.target.value))}
                 placeholder="Ej. 600000000"
               />
             </label>

@@ -35,6 +35,10 @@ class ClientSerializer(serializers.ModelSerializer):
             )
 
         queryset = Client.objects.filter(phone=normalized_phone)
+        request = self.context.get("request")
+
+        if request:
+            queryset = queryset.filter(owner=request.user)
 
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)

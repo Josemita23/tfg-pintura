@@ -1,4 +1,4 @@
-import { Eye, EyeOff, LockKeyhole, LogIn, Paintbrush } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, LogIn } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
@@ -60,7 +60,7 @@ export function LoginPage() {
       <section className="login-card">
         <div className="login-card__brand">
           <div className="login-card__logo">
-            <Paintbrush size={26} />
+            <img src="/rodillo.svg" alt="" />
           </div>
 
           <div>

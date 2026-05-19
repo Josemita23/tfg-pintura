@@ -92,6 +92,33 @@ class ClientAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Client.objects.count(), 2)
 
+    def test_pu_cli_03b_permite_mismo_telefono_para_distintos_usuarios(self):
+        User = get_user_model()
+        other_user = User.objects.create_user(username="other", password="test123")
+        self.client.force_authenticate(user=other_user)
+
+        payload = {
+            "first_name": "Pedro",
+            "last_name": "Gomez",
+            "phone": "600000000",
+            "email": "pedro@example.com",
+            "address": "Madrid",
+            "notes": "",
+            "status": Client.Status.ACTIVE,
+        }
+
+        response = self.client.post(self.clients_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Client.objects.count(), 3)
+        self.assertTrue(
+            Client.objects.filter(
+                owner=other_user,
+                phone="600000000",
+                email="pedro@example.com",
+            ).exists()
+        )
+
     def test_pu_cli_04_ver_detalle_de_un_cliente(self):
         response = self.client.get(f"{self.clients_url}{self.client_one.id}/")
 

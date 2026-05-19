@@ -6,7 +6,6 @@ import {
   Home,
   Layers,
   LogOut,
-  Paintbrush,
   Settings,
   Users,
   WalletCards,
@@ -66,7 +65,7 @@ export function Sidebar() {
     <aside className="sidebar">
       <div className="sidebar__brand">
         <div className="sidebar__logo">
-          <Paintbrush size={20} />
+          <img src="/rodillo.svg" alt="" />
         </div>
 
         <div>
