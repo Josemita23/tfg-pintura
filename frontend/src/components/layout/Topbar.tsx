@@ -5,6 +5,12 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
 import type { Alert } from "../../types/alert";
 
+const todayText = new Intl.DateTimeFormat("es-ES", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+}).format(new Date());
+
 export function Topbar() {
   const navigate = useNavigate();
   const [unreadAlertsCount, setUnreadAlertsCount] = useState(0);
@@ -49,7 +55,7 @@ export function Topbar() {
           {unreadAlertsCount > 0 && <span>{unreadAlertsCount}</span>}
         </button>
 
-        <p className="topbar__date">Hoy es 16 de junio de 2026</p>
+        <p className="topbar__date">Hoy es {todayText}</p>
       </div>
     </header>
   );

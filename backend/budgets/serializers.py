@@ -89,3 +89,19 @@ class BudgetSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("No puedes usar un cliente de otro usuario.")
 
         return value
+
+    def validate_code(self, value):
+        request = self.context.get("request")
+
+        if not request:
+            return value
+
+        duplicated_budget = Budget.objects.filter(owner=request.user, code=value)
+
+        if self.instance:
+            duplicated_budget = duplicated_budget.exclude(pk=self.instance.pk)
+
+        if duplicated_budget.exists():
+            raise serializers.ValidationError("Ya tienes un presupuesto con este código.")
+
+        return value

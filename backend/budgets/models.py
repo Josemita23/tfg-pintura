@@ -28,7 +28,7 @@ class Budget(models.Model):
         related_name="budgets",
         verbose_name="Cliente",
     )
-    code = models.CharField(max_length=30, unique=True, verbose_name="Código")
+    code = models.CharField(max_length=30, verbose_name="Código")
     description = models.TextField(blank=True, verbose_name="Descripción")
     date = models.DateField(verbose_name="Fecha")
     status = models.CharField(
@@ -72,6 +72,12 @@ class Budget(models.Model):
         ordering = ["-date", "-created_at"]
         verbose_name = "Presupuesto"
         verbose_name_plural = "Presupuestos"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "code"],
+                name="unique_budget_code_per_owner",
+            )
+        ]
 
     def __str__(self):
         return f"{self.code} - {self.client}"

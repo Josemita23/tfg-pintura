@@ -17,6 +17,7 @@ class BudgetAPITestCase(APITestCase):
 
         User = get_user_model()
         self.user = User.objects.create_user(username="tester", password="test123")
+        self.other_user = User.objects.create_user(username="other", password="test123")
         self.client.force_authenticate(user=self.user)
 
         self.customer = Client.objects.create(
@@ -26,6 +27,15 @@ class BudgetAPITestCase(APITestCase):
             phone="600000000",
             email="manuel@example.com",
             address="Sevilla",
+            status=Client.Status.ACTIVE,
+        )
+        self.other_customer = Client.objects.create(
+            owner=self.other_user,
+            first_name="Lucia",
+            last_name="Garcia",
+            phone="611111111",
+            email="lucia@example.com",
+            address="Madrid",
             status=Client.Status.ACTIVE,
         )
 
@@ -118,6 +128,46 @@ class BudgetAPITestCase(APITestCase):
         self.assertIn("code", response.data)
         self.assertIn("date", response.data)
         self.assertIn("status", response.data)
+
+    def test_pu_pre_04b_no_permite_repetir_codigo_del_mismo_usuario(self):
+        payload = {
+            "client": self.customer.id,
+            "code": "PRE-001",
+            "description": "Presupuesto duplicado",
+            "date": "2026-05-20",
+            "status": Budget.Status.DRAFT,
+            "vat_percentage": "21.00",
+        }
+
+        response = self.client.post(self.budgets_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Budget.objects.count(), 2)
+        self.assertIn("code", response.data)
+
+    def test_pu_pre_04c_permite_repetir_codigo_de_otro_usuario(self):
+        self.client.force_authenticate(user=self.other_user)
+
+        payload = {
+            "client": self.other_customer.id,
+            "code": "PRE-001",
+            "description": "Presupuesto con codigo compartido",
+            "date": "2026-05-20",
+            "status": Budget.Status.DRAFT,
+            "vat_percentage": "21.00",
+        }
+
+        response = self.client.post(self.budgets_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Budget.objects.count(), 3)
+        self.assertTrue(
+            Budget.objects.filter(
+                owner=self.other_user,
+                client=self.other_customer,
+                code="PRE-001",
+            ).exists()
+        )
 
     def test_pu_pre_05_anadir_concepto_al_presupuesto(self):
         payload = {
